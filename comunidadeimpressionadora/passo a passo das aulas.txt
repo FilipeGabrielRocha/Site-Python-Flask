@@ -1,0 +1,308 @@
+Aula 39
+1 passo: acrescentou os campos dentro do formulario de curso
+2 passo: inseriu dentro do html, mas inserimos por meio de um for
+{% for campo in form %}
+	{% if 'curso_' in campo.name %}
+		<div class="form-group">
+			{{ campo(class="form-check-input") }}
+			{{ campo.label(class="form-check-label") }}
+		</div>
+	{% endif %}
+{% endfor %}
+
+Aula 40 - Editando o Campo Cursos do Banco de Dados
+1 passo: current_user.cursos = atualizar_cursos(form) para atualizar os cursos que estou incrito
+2 passo: criei uma função "def atualizar_cursos(form)" tendo o parametro form para poder ver todos os campos de cursos que tem
+3 passo: dentro dessa função foram feitos 1 for e 2 ifs
+
+for campo in form:# percorrer todos os campos do form
+	if campo.data: #essa linha de codigo mostra qual campo foi marcado
+		if 'curso_' in campo.name:# verificar qual foi clicado
+ 			lista_cursos.append(campo.label.text)# adicionar o texto do campo.label (excel impresionador) na lista de cursos
+
+4 passo: no final retornar um ';'.join(lista_cursos) para me dar como resposta "'Python Impresionador;SQL Impresionador'" para na proxima aula poder fazer a contagem do cursos e parecer no perfil
+5 passo: no arquivo de perfil.html foi fei um if
+
+{% if 'Não Informado' in current_user.cursos or current_user.cursos == '' %}
+	<div class="d-flex flex-column"> <span class="articles">Cursos</span> <span class="number1">0</span> </div>
+{% else %}
+	<div class="d-flex flex-column"> <span class="articles">Cursos</span> <span class="number1">{{ current_user.cursos.count(';')+1 }}</span> </div>
+{% endif %}
+
+esse if foi feito para que pudesse mudar o numero na pagina de perfil, primeiro if foi para caso nao tivesse nenhum cursos clicado e o else é para caso te sido clicado algum curso
+
+aula 41 - Exibindo os Cursos do Usuário
+1 passo: basicamente foi feito edições de HTML, entao unica mudança foi no arquivo perfil.html
+2 passo: criei uma nova linha para mostras as coisas em baixo do que ja foi criado na página
+
+<div class="row justify-content-center">
+    <div class="col col-4" style="text-align: center">
+	<legend><strong>Cursos</strong></legend><br>
+    </div>
+</div>
+
+3 passo: criei 1 if e 1 for para mostrar os cursos e caso nao tenha clicado em nenhum curso aparecer um texto informando isso
+
+<div class="row justify-content-center">
+    <div class="col col-4" style="text-align: center">
+	<legend><strong>Cursos</strong></legend><br>
+	{% if current_user.cursos == '' %}
+            <p>Nenhum curso listado.</p>
+        {% else %}
+            {% for curso in current_user.cursos.split(';') %}
+                <button type="button" class="btn btn-success m-1" disabled>{{ curso }}</button>
+            {% endfor%}
+        {% endif %}
+    </div>
+</div>
+
+Aula 42 - Preenchendo Lista de Usuários do Banco de Dados
+1 passo: copiei a pagina inteira do perfil
+2 passo: exclui o botão de editar perfil
+3 passo: exclui a lista de usuarios que tinha feito a mão e falei que a lista de usuarios era a do banco de dados " lista_usuarios = Usuario.query.all() " isso no arquivo routes.py
+4 passo: editei o caminho da imagem do perfil para " {{ url_for('static', filename='fotos_perfil/{}'.format(usuario.foto_perfil)) }} " porque eu tinha que mostrar o caminho, pois diferente do arquivo perfil.html, o usuarios.html não tinha a variavel foto_perfil, pois estava dentro de um for que extraia as informações do banco de dados (lista_usuarios)
+5 passo: no fim do for que aparece os cursos coloquei uma nova linha que dava um espaçamento para nao ficar colado no final da página
+
+Aula 43 - Permitir a Criação de Post
+1 passo: criei o formulário em forms.py class FormCriarPost(FlaskForm)
+2 passo: fui em routes.py na função def criar_post(): e coloquei ele para funcionar, criar o post dentro do meu banco de dados
+ANTES
+def criar_post():
+    return render_template('criarpost.html', form=form)
+
+DEPOIS
+def criar_post():
+    form = FormCriarPost() #importei para esse arquivo a classe FormCriarPost()
+    if form.validate_on_submit():
+        post = Post(titulo=form.titulo.data, corpo=form.corpo.data, autor=current_user) #criei um variavel post com a instancia da classe FormCriarPost()
+        database.session.add(post) #adicionei no banco de dados
+        database.session.commit() #atualizei no banco de dados
+        flash('Post criado com sucesso.', 'alert-success') #mostrei uma mensagem de que o post foi criado
+        return redirect(url_for('home')) #redirecionei para a home page onde vai ficar os posts que foram criados
+    return render_template('criarpost.html', form=form) #alem do parametro para rodar a pagina tem que ter o parametro form para aparecer o formulário na pagina
+
+3 passo: criei um template para o novo formulário, copiei e colei do editar perfil e fui apagando o que nao queria
+4 passo: lembrar que sempre que uma página fizer mais do que receber informção colocar " methods=['GET', 'POST'] para funcionar
+
+AULA 44 - Ajeitando a HomePage - Feed de Posts
+passo 1 - unica coisa que foi feita de python foi -> fui no arquivo routes.py e no def home() fizemos uma integração com o banco de dados
+def home():
+    posts = Post.query.all() #coloquei essa linha
+    return render_template('home.html', posts=posts)#acrescentei o posts para reconhecer a variavel
+
+
+AULA 45 - Terminando Edição dos Posts
+1 passo - copiei o div de imagem do perfil.html
+2 passo - colei no home.html onde fica o campo de imagem
+3 passo - para a foto aparecer eu tive que mostrar o local que a foto esta com esse codigo " url_for('static', filename='fotos_perfil/{}'.format(post.autor.foto_perfil)) "
+4 passo - copiei o for do perfil que mostrava os cursos para mostrar o curso em baixo da foto
+
+<div class="row justify-content-center">
+	<div class="col">
+		{% if post.autor.cursos == '' %}
+			<button type="button" class="btn btn-danger m-1" disabled>Curso não Informado</button>
+		{% else %}
+			{% for curso in post.autor.cursos.split(';') %}
+				<button type="button" class="btn btn-success m-1" disabled>{{ curso }}</button>
+                        {% endfor%}
+		{% endif %}
+	</div>
+</div>
+
+5 passo - coloquei um <strong>{{ post.autor.username }}</strong> antes do for para mostrar o nome do usuario
+6 passo - no fim fui em routes.py e arrumei a variavel posts da função home para ordernar por descrescente
+
+posts = Post.query.order_by(Post.id.desc())
+
+AULA 46 - Uma Página para cada Post
+
+1 passo: criei uma pagina nova
+
+@app.route('/post/<post_id>')
+def exibir_post(post_id):
+    post = Post.query.get(post_id)
+    return render_template('post.html', post=post)
+
+coloquei esse <post_id> para cada post ter uma pagina independente, a variavel post é responsavel por pegar os id dos posts e poder criar a pagina
+
+2 passo: copiei e colei o arquivo do home.html, como queria uma igual mas so com os posts então apaguei tudo que nao fosse o post, imagem e os cursos
+3 passo:  no arquivo home.html eu editei os titulos dos posts para virarem links para poder abrir os posts nessa nova página q criei e la apagar/editar os meus posts e ver os posts dos outros
+
+<div class="col-9">
+        <a style="text-decoration: none" href="{{ url_for('exibir_post', post_id=post.id) }}"><h3>{{ post.titulo }}</h3></a>
+	<p>{{ post.corpo}} </p>
+</div>
+
+AULA 47 - Criando Edição do Post
+1 passo: criei uma condição pra quem for autor do post, com isso fui la routes.py na função exibir_post(post_id)
+
+@app.route('/post/<post_id>')
+def exibir_post(post_id):
+    post = Post.query.get(post_id)
+    if current_user == post.autor:
+        form = FormCriarPost()
+    return render_template('post.html', post=post, form=form)
+
+2 passo: fui em criarpost.html para fazer o post aparecer na pagina caso seja o autor do post, copiei o div inteiro do arquivo e em post.html fui uma linha antes do {% endblock %} criei um if e colei la no meio do if, mudei apenas o titulo pata Editar post
+3 passo: fui para routes.py na função de exibir post para deixa a vida do usuario que vai editar mais facil, fazer com q o titulo e o corpo sejam iguais assim se ele quiser mudar uma letra ou coisa pequena, não precisa escrever tudo de novo entao acrescentei um if, que esta marcado com #
+
+@app.route('/post/<post_id>', methods=['GET', 'POST'])
+def exibir_post(post_id):
+    post = Post.query.get(post_id)
+    if current_user == post.autor:
+        form = FormCriarPost()
+        #if request.method == 'GET':
+            #form.titulo.data = post.titulo
+            #form.corpo.data = post.corpo
+    else:
+        form = None
+    return render_template('post.html', post=post, form=form)
+4 passo: coloquei o metodo get e post -> methods=['GET', 'POST'] para poder postar e não dar erro
+5 passo: colocar o login required se estiver logado coloquando @login_required em baixo do @app.route('post/<post_id>')
+6 passo: coloquei um elif para realmente atualizar o post que foi editado ficando assim
+
+@app.route('/post/<post_id>', methods=['GET', 'POST'])
+@login_required
+def exibir_post(post_id):
+    post = Post.query.get(post_id)
+    if current_user == post.autor:
+        form = FormCriarPost()
+        if request.method == 'GET':
+            form.titulo.data = post.titulo
+            form.corpo.data = post.corpo
+        #elif form.validate_on_submit():
+            #post.titulo = form.titulo.data
+            #post.corpo = form.corpo.data
+            #database.session.commit()
+            #flash('Post Atualizado com sucesso', 'alert-success')
+            #return redirect(url_for('home'))
+    else:
+        form = None
+    return render_template('post.html', post=post, form=form)
+
+depois do elif, as 2 primeiras linhas foi para falar que as atualizações novas agora vão tomar o antigo lugar do post que foi criado, 3 linha para atualizar, e 4 e 5 linha para mandar uma msg que foi atualizado com sucesso e redirecionar para a pagina home
+
+AULA 48 - Data de Criação, Editar e Excluir Post
+1 passo: no arquivo pots.html no campo que esta o post.titulo, dentro dele coloquei " <small class="text-muted" style="font-size: 15px"> - Data de Criação: {{ post.data_criacao.strftime('%d/%m/%Y') }} - Editar Post / Excluir Post </small> " para ficar do lado do titulo a data de criação numa letra menor
+2 passo: fiz aparecer o " editar / excluir post" apenas para quem é o dono do post, colocando dentro do if, igual foi feito para aparecer para editar so quando for o dono do post
+
+{% if form %}
+	- Editar Post / Excluir Post
+{% endif %}
+ 
+3 passo: vou criar um link para editar o post pra ir direto aonde edita o post, onde esta editar post vou transformar num link, desci no form de editar post, e onde estava <form eu criei um classe chamada id, para meu link saber que é pra la q ele tem q levar, voltando para o campo de editar, escrevi #form_editarpost, que foi o id que coloquei
+
+{% if form %}
+	- <a href="#form_editarpost">Editar Post</a> / Excluir Post
+{% endif %}
+
+4 passo: criei um pop para perguntar se realmente quer excluir o post e onde esta escrito " excluir post " transformei em link e adicionei 3 classes
+
+<!-- POP -->
+<div class="modal fade" id="excluirpost" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Excluir Post</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Tem certeza que quer excluir o seu post?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button type="button" class="btn btn-primary">Excluir Post</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LINK -- >
+
+<a href="#" data-bs-toggle="modal" data-bs-target="#excluirpost">Excluir Post</a>
+
+AULA 49 - Excluir Post
+
+1 passo: editei todo modal para os texto que eu quero mostrar
+2 passo: criei uma nova pagina para excluir o post e uma nova função " def excluir_post(post_id) ", nela falei que precisava  estar logado, precisava ser o dono do post, coloquei o metodo get e post e se nao fosse o dono, vai dar um erro falando que é proibido acessar por link e fiz a lógica para excluir o post do banco de dados, IMPORTEI o modulo ABORT.
+
+@app.route('/post/<post_id>/excluir', methods=['GET', 'POST'])
+@login_required
+def excluir_post(post_id):
+    post = Post.query.get(post_id)
+    if current_user == post.autor:
+        database.session.delete(post)
+        database.session.commmit()
+        flash('Post excluido com sucesso!', 'alert-danger')
+        return redirect(url_for('home'))
+    else:
+        abort(403)
+
+3 passo: eu linkei o botão excluir post para realmente excluir o post, tive que criar um formulario vazio no arquivo post.html para poder comunicar com o banco de dados, dentro do form acrescentei o method e action, para falar para postar e qual ação deveria fazer (no caso excluir usando a função excluir_pos que criei), e para o botão enviar o type do butão tem que mudar para "submit"
+
+<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Cancelar</button>
+          <form method="POST" action="{{ url_for('excluir_post', post_id=post.id) }}">
+              <button type="submit" class="btn btn-danger">Excluir Post</button>
+          </form>
+
+AULA 50 - Método de Contagem de Posts
+1 passo: criei um metodo dentro do arquivo models.py, dentro da classe usuario, uma função def contar_post(self):, que vai retornar o tamanho do self.posts que é a quantidade de posts feito por cada usuario na plataforma
+
+class Usuario(database.Model, UserMixin):
+    id = database.Column(database.Integer, primary_key=True)
+    username = database.Column(database.String, nullable=False)
+    senha = database.Column(database.String, nullable=False)
+    email = database.Column(database.String, nullable=False, unique=True)
+    foto_perfil = database.Column(database.String, default='default.jpg')
+    posts = database.relationship('Post', backref='autor', lazy=True)
+    cursos = database.Column(database.String, nullable=False, default='Não Informado')
+
+    def contar_post(self):
+        return len(self.posts)
+2 passo: fui em perfil.html e na parte que mostrar o número dos post coloquei {{ current_user.contar_post() }}, current_user pq eu só posso entrar no perfil se estiver logado.
+3 passo: fui em usuarios.html e na parte que mostra o número dos posts coloquei {{ usuario.contar_post() }}, desse vez foi diferente, pq estou na pagina de usuarios, vc precisar estar logado, mas vc nao faz nada nela, apenas ve os outros usuarios, então por isso temos que chamar a função Usuarios que foi renomeada por usuarios e falar qual função ela deve ter que no caso é a de contar_post()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
